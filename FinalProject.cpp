@@ -22,12 +22,13 @@ class prod{
         string nonTrmnl;
 
         prod(string rule){
-            rule = removeSpace(rule);
+//            rule = removeSpace(rule);
 
             //fill the non-terminal string and the terminals set of string
             //1. append the non-terminal part
             string str;
             for(int i=0;i<rule.size();i++){
+                if(rule[i] == ' ' && nonTrmnl.size()==0)  continue;
                 if(rule[i] == '-' && rule[i+1] == '>'){
                     i++;
                     nonTrmnl = str;
@@ -39,20 +40,23 @@ class prod{
             }
             //2. append the terminals part
             for(int i=0;i<str.size();i++){
+                if(str[i] == ' ')   continue;
                 if(str[i] == '|'){
                     this->rule.push_back("|");
                     continue;
                 }
-                string tmp;
-                if(i+1<str.size() && str[i+1]=='\''){
-                    tmp = str[i];   tmp += '\'';
-                    trmnls.insert(tmp), i++;
-                }
-                else if(str[i] == '‘')  trmnls.insert("‘‘"), tmp = "‘‘", i++;
-                else{
-                    tmp = str[i];
-                    trmnls.insert(tmp);
-                }
+                string tmp; tmp += str[i];
+                while(i+1<str.size() && str[i+1]!=' ') i++, tmp += str[i];
+//                if(i+1<str.size() && str[i+1]=='\''){
+//                    tmp = str[i];   tmp += '\'';
+//                    trmnls.insert(tmp), i++;
+//                }
+//                else if(str[i] == '‘')  trmnls.insert("‘‘"), tmp = "‘‘", i++;
+//                else{
+//                    tmp = str[i];
+//                    trmnls.insert(tmp);
+//                }
+                trmnls.insert(tmp);
                 this->rule.push_back(tmp);
             }
         }
@@ -93,6 +97,26 @@ class cfg{
             for(auto term : first) if(term == "‘‘")  return true;
             return false;
         }
+
+        //left factoring function
+        void lefFactoring(){
+            vector<vector<string>> lftFacRules;
+            map<string, bool> done;
+            for(int i=0;i<rules.size();i++){
+                if(done[rules[i][0]])   continue;
+                vector<string> rule;
+                rule.push_back(rules[i][0]);
+                for(int j=i;j<rules.size();j++){
+                    if(rules[i][0] != rules[j][0])  continue;
+                    if(i!=j)    rule.push_back("|");
+                    for(int k=1;k<rules[j].size();k++)  rule.push_back(rules[j][k]);
+                }
+                lftFacRules.push_back(rule);
+                done[rules[i][0]] = 1;
+            }
+            rules = lftFacRules;
+        }
+
         void findFirst(string term){
             //If firsts of the term are already calculated then return
             if(firsts[term].size()>0)   return;
@@ -197,6 +221,8 @@ class cfg{
         }
 
         void solve(){
+            lefFactoring();
+
             puts("Grammar parsed:");
             for(int i=0;i<rules.size();i++){
                 cout<<i+1<<". ";
@@ -245,10 +271,13 @@ class cfg{
 };
 
 vector<string> vecs{"E -> T E'",
-                    "E' -> + T E'|‘ ‘",
+                    "E' -> + T E'",
+                    "E' -> ‘‘",
                     "T -> F T'",
-                    "T' -> * F T'|‘ ‘",
-                    "F -> ( E )|d",
+                    "T' -> * F T'",
+                    "T' -> ‘‘",
+                    "F -> ( E )",
+                    "F -> id"
 };
 
 int main(){

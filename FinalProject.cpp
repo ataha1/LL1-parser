@@ -149,6 +149,60 @@ class cfg{
             rules = lftFacRules;
         }
 
+        //eliminate left recurrsion
+        void elimLeftRec(){
+            vector<vector<string>> lftRecRules;
+            queue<vector<string>> q;
+            for(auto rule: rules)   q.push(rule);
+
+            while(q.size()){
+                if(q.front()[0] != q.front()[1]){
+                    lftRecRules.push_back(q.front());
+                    q.pop();
+                    continue;
+                }
+                vector<string> rule = q.front();
+                q.pop();
+                string nwTrm = rule[0];
+                nwTrm += '\'';
+
+                vector<string> rule1, rule2;
+                rule1.push_back(rule[0]);
+                rule2.push_back(nwTrm);
+
+                for(int i=1;i<rule.size();i++){
+                    if(rule[i] == "|")  continue;
+                    vector<string> tmp;
+                    tmp.push_back(rule[i]);
+                    while(i+1< rule.size() && rule[i+1] != "|"){
+                        i++;
+                        tmp.push_back(rule[i]);
+                    }
+//                    for(auto e: tmp)    cout<<e<<" ";   cout<<"\n";
+
+                    if(tmp[0] == rule[0]){
+                        if(rule2.size()>1)  rule2.push_back("|");
+                        for(int j=1;j<tmp.size();j++)   rule2.push_back(tmp[j]);
+                        rule2.push_back(nwTrm);
+                    }
+                    else{
+                        if(rule1.size()>1)  rule1.push_back("|");
+                        for(int j=0;j<tmp.size();j++){
+                            if(tmp[j] == eps)   continue;
+                            rule1.push_back(tmp[j]);
+                        }
+                        rule1.push_back(nwTrm);
+                    }
+                }
+                if(rule2.size() != 1)   rule2.push_back("|");
+                rule2.pb(eps);
+                lftRecRules.push_back(rule1);
+                lftRecRules.push_back(rule2);
+            }
+
+            rules = lftRecRules;
+        }
+
         void findFirst(string term){
             //If firsts of the term are already calculated then return
             if(firsts[term].size()>0)   return;
@@ -258,6 +312,7 @@ class cfg{
 
         void solve(){
             lefFactoring();
+            elimLeftRec();
 
             puts("Grammar parsed:");
             for(int i=0;i<rules.size();i++){
@@ -323,8 +378,9 @@ class cfg{
 
             cout<<"Tracing for sample parsing: \""<<str<<"\"\n";
 
+            string prvRule = " ";
             while(parseStk.size() && inputStk.size()){
-                printStk(parseStk);         printStk(inputStk);     cout<<"\n";
+                printStk(parseStk);         printStk(inputStk);     cout<<prvRule<<"\n";
                 string stktp = parseStk.top();
                 string inpttp = inputStk.top();
                 parseStk.pop();
@@ -333,6 +389,8 @@ class cfg{
                     if(row[0] == stktp){
                         for(int i=1;i<row.size();i++){
                             if(parseTable[0][i] == inpttp){
+                                prvRule = row[0];       prvRule += " -> ";
+                                prvRule += row[i];
                                 if(row[i] == eps)   continue;
                                 vector<string>trms = stovecofs(row[i]);
                                 reverse(trms.begin(), trms.end());
@@ -342,7 +400,8 @@ class cfg{
                     }
                 }
                 if(inpttp == parseStk.top()){
-                    printStk(parseStk);         printStk(inputStk);     cout<<"\n";
+                    printStk(parseStk);         printStk(inputStk);     cout<<prvRule<<"\n";
+                    prvRule = " ";
                     inputStk.pop();       parseStk.pop();
                 }
                 if(parseStk.top() == "$" && inputStk.top() == "$")  break;

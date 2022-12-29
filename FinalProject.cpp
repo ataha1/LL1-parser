@@ -14,6 +14,36 @@ string removeSpace(string s){
     return ret;
 }
 
+//function that convert string to vector of strings
+vector<string> stovecofs(string str){
+    vector<string> ret;
+    string tmp;
+    for(auto &let : str){
+        if(let == ' '){
+            if(tmp.size())  ret.push_back(tmp);
+            tmp.clear();
+        }
+        else    tmp += let;
+    }
+    if(tmp.size())  ret.push_back(tmp);
+    return ret;
+}
+
+//function to print stack
+void printStk(stack<string> stk){
+    int sz = 0;
+    stack<string> tmp;
+    while(stk.size())   tmp.push(stk.top()), sz += stk.top().size(), sz++, stk.pop();
+    while(tmp.size())   cout<<tmp.top()<<" ",   tmp.pop();
+    for(int i=sz;i<16;i++) cout<<" ";
+}
+
+//function to print queue
+void printQ(queue<string> q){
+    while(q.size())   cout<<q.front()<<" ", q.pop();
+    cout<<"\n";
+}
+
 //class for production rules
 class prod{
     public:
@@ -71,6 +101,8 @@ class cfg{
         vector<vector<string>> rules;
         map<string,set<string>> firsts, follows;
         vector<vector<string>> parseTable;
+        vector<vector<string>> parseAns;
+
 
         cfg(vector<string> &prodRules){
 
@@ -189,7 +221,7 @@ class cfg{
 
             parseTable.pb(columns);
 
-            char rowCnt = '1';
+            string rowCnt;
             for(auto rule: rules){
                 row.assign(columns.size(), "0");
                 bool takeFirst = 1;
@@ -199,6 +231,9 @@ class cfg{
                         continue;
                     }
                     if(takeFirst){
+                        int idx = i;
+                        rowCnt += rule[i];
+                        while(idx+1<rule.size() && rule[idx+1] != "|") idx++, rowCnt += ' ', rowCnt += rule[idx];
                         if(hasEps(firsts[rule[i]])){
                             for(int trm = 0;trm<columns.size();trm++){
                                 if(follows[rule[0]].find(columns[trm]) != follows[rule[0]].end()){
@@ -212,11 +247,12 @@ class cfg{
                             }
                         }
                         takeFirst = 0;
+                        rowCnt = "";
                     }
                     if(rule[i] == "|")  takeFirst = 1;
                 }
                 parseTable.pb(row);
-                rowCnt++;
+                rowCnt = "";
             }
         }
 
@@ -233,6 +269,12 @@ class cfg{
                 cout<<"\n";
             }
             puts("");
+
+            cout<<"The non terminals in the grammar are: ";
+            for(auto trm: nonTrmnls)    cout<<trm<<" ";     cout<<"\n\n";
+
+            cout<<"The terminals in the grammar are: ";
+            for(auto trm : trmnls)      cout<<trm<<" ";     cout<<"\n\n";
 
             for(auto trm : trmnls) firsts[trm].insert(trm);
             trmnls.insert("$");
@@ -260,11 +302,51 @@ class cfg{
             for(auto row:parseTable){
                 for(auto cell : row){
                     cout<<cell<<" ";
-                    if(cell.size()==1)  cout<<" ";
+                    for(int i=cell.size();i<7;i++)  cout<<" ";
                 }
                 cout<<"\n";
             }
 
+            puts("");
+        }
+
+        void parse(string str){
+            vector<string> input = stovecofs(str);
+            reverse(input.begin(), input.end());
+
+            stack<string>parseStk, inputStk;
+            parseStk.push("$");
+            parseStk.push(rules[0][0]);
+
+            inputStk.push("$");
+            for(auto trm : input)   inputStk.push(trm);
+
+            cout<<"Tracing for sample parsing: \""<<str<<"\"\n";
+
+            while(parseStk.size() && inputStk.size()){
+                printStk(parseStk);         printStk(inputStk);     cout<<"\n";
+                string stktp = parseStk.top();
+                string inpttp = inputStk.top();
+                parseStk.pop();
+
+                for(auto row : parseTable){
+                    if(row[0] == stktp){
+                        for(int i=1;i<row.size();i++){
+                            if(parseTable[0][i] == inpttp){
+                                if(row[i] == eps)   continue;
+                                vector<string>trms = stovecofs(row[i]);
+                                reverse(trms.begin(), trms.end());
+                                for(auto trm : trms) parseStk.push(trm);
+                            }
+                        }
+                    }
+                }
+                if(inpttp == parseStk.top()){
+                    printStk(parseStk);         printStk(inputStk);     cout<<"\n";
+                    inputStk.pop();       parseStk.pop();
+                }
+                if(parseStk.top() == "$" && inputStk.top() == "$")  break;
+            }
         }
 
 
@@ -283,6 +365,7 @@ vector<string> vecs{"E -> T E'",
 int main(){
     cfg grammar(vecs);
     grammar.solve();
+    grammar.parse("id + id");
     return 0;
 }
 

@@ -310,10 +310,7 @@ class cfg{
             }
         }
 
-        void solve(){
-            lefFactoring();
-            elimLeftRec();
-
+        void printGrammar(){
             puts("Grammar parsed:");
             for(int i=0;i<rules.size();i++){
                 cout<<i+1<<". ";
@@ -324,16 +321,19 @@ class cfg{
                 cout<<"\n";
             }
             puts("");
+        }
 
+        void printNonTerminals(){
             cout<<"The non terminals in the grammar are: ";
             for(auto trm: nonTrmnls)    cout<<trm<<" ";     cout<<"\n\n";
+        }
 
+        void printTerminals(){
             cout<<"The terminals in the grammar are: ";
             for(auto trm : trmnls)      cout<<trm<<" ";     cout<<"\n\n";
+        }
 
-            for(auto trm : trmnls) firsts[trm].insert(trm);
-            trmnls.insert("$");
-
+        void printFirsts(){
             puts("Firsts list:");
             for(auto nonTrm : nonTrmnls){
                 findFirst(nonTrm);
@@ -342,7 +342,9 @@ class cfg{
             }
 
             puts("");
+        }
 
+        void printFollows(){
             puts("Follows list:");
             for(auto rule:rules){
                 cout<<rule[0]<<": ";
@@ -351,8 +353,9 @@ class cfg{
             }
 
             puts("");
+        }
 
-            constructTable();
+        void printParseTable(){
             puts("Parse Table:");
             for(auto row:parseTable){
                 for(auto cell : row){
@@ -363,6 +366,26 @@ class cfg{
             }
 
             puts("");
+        }
+
+        void solve(){
+            lefFactoring();
+            elimLeftRec();
+
+            printGrammar();
+
+            printNonTerminals();
+            printTerminals();
+
+            for(auto trm : trmnls) firsts[trm].insert(trm);
+            trmnls.insert("$");
+
+            printFirsts();
+            printFollows();
+
+            constructTable();
+
+            printParseTable();
         }
 
         void parse(string str){
